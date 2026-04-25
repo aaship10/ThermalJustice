@@ -83,6 +83,29 @@ export default function NavBar({
 
       {/* RIGHT: Icon buttons */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {isLoggedIn && (
+          <Link 
+            to="/history"
+            style={{
+              padding: '6px 16px',
+              borderRadius: '100px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: '12px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.2s ease',
+              marginRight: '8px'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}
+          >
+            History
+          </Link>
+        )}
         {isLoggedIn ? (
           <button 
             onClick={() => {

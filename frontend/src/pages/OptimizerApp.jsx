@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
 // Components — Shared
 import NavBar from '../components/shared/NavBar.jsx';
@@ -57,6 +58,30 @@ export default function OptimizerApp() {
   const [lstToggled, setLstToggled] = useState(false);
   const [savedScenarios, setSavedScenarios] = useState([]);
   const [showScenarioComparison, setShowScenarioComparison] = useState(false);
+
+  const locationHook = useLocation();
+
+  // Restore history state from URL
+  useEffect(() => {
+    const searchParams = new URLSearchParams(locationHook.search);
+    const queryLocation = searchParams.get('location');
+    const queryBudget = searchParams.get('budget');
+    
+    if (queryLocation && queryBudget) {
+      const b = parseFloat(queryBudget);
+      setBudget(b);
+      setAlpha(0.5); // CRITICAL LOGIC: default alpha
+      
+      // We also pretend location represents something if we had global location state,
+      // but since 'location' isn't explicitly active in OptimizerApp context, we just restore the portfolio parameters.
+      
+      setIsOptimised(true);
+      setShowPortfolio(true);
+      setToastMessage(`Restored query: ${queryLocation} at ₹${b.toFixed(1)}Cr, α=0.5`);
+      setShowToast(true);
+    }
+  }, [locationHook.search, setBudget, setAlpha]);
+
 
   // Layer toggle handler — shows toast on first LST toggle
   const handleLayerChange = useCallback((layer) => {

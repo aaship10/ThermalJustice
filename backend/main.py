@@ -142,6 +142,25 @@ async def save_search_history(payload: QueryPayload, user_id: str = Depends(get_
         print(f"Error saving history to DB: {e}")
         raise HTTPException(status_code=500, detail="Database error")
 
+@app.get("/api/history")
+async def get_search_history(user_id: str = Depends(get_current_user_id)):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    """
+                    SELECT id, location, budget, createdAt, user_id
+                    FROM "SearchHistory"
+                    WHERE user_id = %s
+                    ORDER BY createdAt DESC;
+                    """,
+                    (user_id,)
+                )
+                history = cur.fetchall()
+        return {"success": True, "history": history}
+    except Exception as e:
+        print(f"Error fetching history from DB: {e}")
+        raise HTTPException(status_code=500, detail="Database error")
 
 @app.post("/api/register")
 async def register(user: UserAuth):

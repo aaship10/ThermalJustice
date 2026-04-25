@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Map, { Source, Layer, Popup } from 'react-map-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { TVS_FILL_COLOR_EXPRESSION, LST_FILL_COLOR_EXPRESSION } from '../../utils/colorUtils.js';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const PUNE_CENTER = { latitude: 18.5204, longitude: 73.8567 };
 
 /**
@@ -116,30 +115,13 @@ export default function MapView({
     },
   };
 
-  if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'pk.your_mapbox_token_here') {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0B1929]">
-        <div className="text-center glass-card p-8 max-w-md">
-          <h3 className="text-xl font-bold text-white mb-3">Mapbox Token Required</h3>
-          <p className="text-[#94A3B8] text-sm mb-4">
-            Create a <code className="text-[#0D9488]">.env</code> file in the frontend directory with:
-          </p>
-          <code className="text-[#0D9488] text-sm bg-black/30 px-3 py-2 rounded block">
-            VITE_MAPBOX_TOKEN=pk.your_token_here
-          </code>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <Map
       ref={mapRef}
       {...viewState}
       onMove={evt => setViewState(evt.viewState)}
       style={{ width: '100%', height: '100%' }}
-      mapStyle="mapbox://styles/mapbox/dark-v11"
-      mapboxAccessToken={MAPBOX_TOKEN}
+      mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
       interactiveLayerIds={['blocks-fill']}
       onMouseMove={onHover}
       onMouseLeave={() => { setCursor('default'); setHoverInfo(null); }}

@@ -9,8 +9,8 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      // react-map-gl v8 requires subpath imports
-      'react-map-gl': 'react-map-gl/mapbox',
+      // redirect all react-map-gl imports to the maplibre adapter
+      'react-map-gl': 'react-map-gl/maplibre',
     },
   },
   assetsInclude: ['**/*.geojson'],

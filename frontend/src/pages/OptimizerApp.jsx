@@ -16,6 +16,9 @@ import PortfolioPanel from '../components/panels/PortfolioPanel.jsx';
 import ParetoChart from '../components/panels/ParetoChart.jsx';
 import ComparisonView from '../components/panels/ComparisonView.jsx';
 import DataSourcesModal from '../components/panels/DataSourcesModal.jsx';
+import TempHistogram from '../components/panels/TempHistogram.jsx';
+import CostEffChart from '../components/panels/CostEffChart.jsx';
+import ScenarioComparison from '../components/panels/ScenarioComparison.jsx';
 
 // Components — Controls
 import ControlBar from '../components/controls/ControlBar.jsx';
@@ -52,6 +55,8 @@ export default function OptimizerApp() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [lstToggled, setLstToggled] = useState(false);
+  const [savedScenarios, setSavedScenarios] = useState([]);
+  const [showScenarioComparison, setShowScenarioComparison] = useState(false);
 
   // Layer toggle handler — shows toast on first LST toggle
   const handleLayerChange = useCallback((layer) => {
@@ -89,6 +94,7 @@ export default function OptimizerApp() {
     }
   }, []);
 
+
   // Alpha select from Pareto chart
   const handleAlphaSelect = useCallback((newAlpha) => {
     setAlpha(newAlpha);
@@ -96,6 +102,26 @@ export default function OptimizerApp() {
     setShowPortfolio(true);
     setActiveTab('Heat Map');
   }, [setAlpha]);
+
+  // Save scenario
+  const handleSaveScenario = useCallback(() => {
+    if (savedScenarios.length >= 2) {
+      setToastMessage('Maximum 2 scenarios can be saved for comparison. Please remove one first (view them in Comparison View).');
+      setShowToast(true);
+      return;
+    }
+    const newScenario = {
+      id: Date.now(),
+      alpha,
+      budget,
+      stats: portfolioStats,
+      portfolio: currentPortfolio,
+      date: new Date().toISOString()
+    };
+    setSavedScenarios(prev => [...prev, newScenario]);
+    setToastMessage('Scenario saved for comparison.');
+    setShowToast(true);
+  }, [alpha, budget, portfolioStats, currentPortfolio, savedScenarios]);
 
   // Export PDF handler (basic)
   const handleExport = useCallback(async () => {
@@ -199,28 +225,41 @@ export default function OptimizerApp() {
               portfolioStats={portfolioStats}
               budget={budget}
               visible={showPortfolio}
+              onSaveScenario={handleSaveScenario}
             />
 
-            {/* Before/After Button */}
+            {/* Floating Action Buttons */}
             {isOptimised && (
-              <button
-                onClick={() => setShowComparison(true)}
-                className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 glass-card px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-all"
-              >
-                🔄 Before / After Comparison
-              </button>
+              <div className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 flex gap-4">
+                <button
+                  onClick={() => setShowComparison(true)}
+                  className="glass-card px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+                >
+                  🔄 Swipe Comparison
+                </button>
+                {savedScenarios.length > 0 && (
+                  <button
+                    onClick={() => setShowScenarioComparison(true)}
+                    className="glass-card px-6 py-2.5 text-sm font-semibold text-[#10B981] hover:bg-white/10 transition-all shadow-[0_8px_32px_rgba(0,0,0,0.5)] border border-[#10B981]/30"
+                  >
+                    ⚖️ View Scenarios ({savedScenarios.length})
+                  </button>
+                )}
+              </div>
             )}
           </>
         )}
 
         {activeTab === 'Analytics' && (
-          <div className="h-full overflow-y-auto p-8" style={{ backgroundColor: '#0B1929' }}>
-            <div className="max-w-4xl mx-auto">
+          <div className="h-full overflow-y-auto p-8 pb-32" style={{ backgroundColor: '#0B1929' }}>
+            <div className="max-w-4xl mx-auto space-y-8">
               <ParetoChart
                 paretoData={currentParetoFront}
                 currentAlpha={alpha}
                 onAlphaSelect={handleAlphaSelect}
               />
+              <TempHistogram geojson={geojson} />
+              <CostEffChart interventionEffects={interventionEffects} />
             </div>
           </div>
         )}
@@ -289,6 +328,21 @@ export default function OptimizerApp() {
       {/* Data Sources Modal */}
       {showDataSources && (
         <DataSourcesModal onClose={() => setShowDataSources(false)} />
+      )}
+
+      {/* Scenario Comparison View */}
+      {showScenarioComparison && (
+        <ScenarioComparison 
+          scenarios={savedScenarios} 
+          onClose={() => setShowScenarioComparison(false)}
+          onRestore={(scenario) => {
+            setBudget(scenario.budget);
+            setAlpha(scenario.alpha);
+            setShowScenarioComparison(false);
+            setToastMessage('Restored scenario parameters.');
+            setShowToast(true);
+          }}
+        />
       )}
     </div>
   );

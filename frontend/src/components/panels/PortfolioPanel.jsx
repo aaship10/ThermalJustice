@@ -8,7 +8,7 @@ const INTERVENTION_CONFIG = {
   pocket_parks: { icon: '⛲', label: 'Pocket Parks', color: '#4ADE80' },
 };
 
-export default function PortfolioPanel({ portfolio, portfolioStats, budget, visible }) {
+export default function PortfolioPanel({ portfolio, portfolioStats, budget, visible, onSaveScenario }) {
   const [animatedCount, setAnimatedCount] = useState(0);
 
   useEffect(() => {
@@ -122,6 +122,16 @@ export default function PortfolioPanel({ portfolio, portfolioStats, budget, visi
           </div>
         )}
       </div>
+
+      {/* Save Scenario Button */}
+      {interventionsList.length > 0 && onSaveScenario && (
+        <button
+          onClick={onSaveScenario}
+          className="w-full mt-6 py-3 rounded-xl border border-[#0D9488]/50 bg-[#0D9488]/10 text-[#0D9488] font-bold text-sm hover:bg-[#0D9488]/20 transition-colors"
+        >
+          💾 Save Scenario
+        </button>
+      )}
 
       {/* Efficiency Warning */}
       {portfolioStats.totalCost < budget * 0.9 && interventionsList.length > 0 && (

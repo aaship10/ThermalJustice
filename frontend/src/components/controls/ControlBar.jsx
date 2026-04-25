@@ -197,7 +197,7 @@ export default function ControlBar({
           width: 100%;
           background: transparent;
           outline: none;
-          margin-bottom:10px;
+          margin-bottom:15px;
           padding-top: 5px;
         }
         .equity-slider::-webkit-slider-runnable-track {
@@ -335,19 +335,6 @@ export default function ControlBar({
                 Cr
               </span>
             </div>
-
-            {/* Budget remaining gauge */}
-            {isOptimised && (
-              <div className="absolute -bottom-3 left-0 right-0 h-[3px] rounded-full overflow-hidden bg-white/5">
-                <div
-                  className="h-full rounded-full transition-all duration-300"
-                  style={{
-                    width: `${budgetUsedPct}%`,
-                    backgroundColor: budgetUsedPct > 90 ? '#D73027' : '#0D9488',
-                  }}
-                />
-              </div>
-            )}
           </div>
 
           {/* 3. Equity Slider */}

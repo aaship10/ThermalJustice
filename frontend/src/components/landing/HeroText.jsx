@@ -83,10 +83,10 @@ export default function HeroText() {
         </p>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 flex flex-col items-center gap-2">
+        <div className="absolute bottom-8 flex flex-col items-center gap-1">
           <div
             className="liquid-glass inline-flex w-fit items-center justify-center rounded-[999px]"
-            style={{ padding: '14px 22px' }}
+            style={{ padding: '5px 22px' }}
           >
             <span className="text-[11px] uppercase tracking-[0.1em] text-white/50">
               scroll to witness the difference

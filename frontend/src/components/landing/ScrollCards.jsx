@@ -7,8 +7,8 @@ gsap.registerPlugin(ScrollTrigger);
 const CARDS = [
   {
     id: 'card-1',
-    headline: "14°C difference.",
-    subtext: "Two kilometers apart. Same city. One is getting planned relief. The other isn't.",
+    headline: "4°C difference.",
+    subtext: "Ten kilometers apart. Same city. One is cooler. The other isn't.",
     start: '18%',
     end: '30%',
     position: { left: '8%', top: '50%', transform: 'translateY(-50%)' },

@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+pandas
+geopandas
+pyarrow
+torch
+torch-geometric
+xgboost
+scikit-learn
+requests
+python-dotenv
+rasterio

@@ -1,0 +1,36 @@
+# --- ThermalJustice Pune Specifics ---
+.env
+data/*.csv
+data/*.csv.gz
+data/*.parquet
+models/*.zip
+models/*.pth
+models/*.pkl
+models/*.joblib
+
+# --- Python Environment & Bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+build/
+dist/
+*.egg-info/
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- IDE/Editor Files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Logs ---
+*.log
+logs/

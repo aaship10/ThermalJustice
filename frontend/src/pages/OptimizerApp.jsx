@@ -1,0 +1,295 @@
+import React, { useState, useCallback } from 'react';
+
+// Components — Shared
+import NavBar from '../components/shared/NavBar.jsx';
+import Toast from '../components/shared/Toast.jsx';
+
+// Components — Map
+import MapView from '../components/map/MapView.jsx';
+import LayerToggle from '../components/map/LayerToggle.jsx';
+import Legend from '../components/map/Legend.jsx';
+import InterventionMarkers from '../components/map/InterventionMarkers.jsx';
+
+// Components — Panels
+import BlockDetail from '../components/panels/BlockDetail.jsx';
+import PortfolioPanel from '../components/panels/PortfolioPanel.jsx';
+import ParetoChart from '../components/panels/ParetoChart.jsx';
+import ComparisonView from '../components/panels/ComparisonView.jsx';
+import DataSourcesModal from '../components/panels/DataSourcesModal.jsx';
+
+// Components — Controls
+import ControlBar from '../components/controls/ControlBar.jsx';
+
+// Hooks
+import { useMapData } from '../hooks/useMapData.js';
+import { usePortfolio } from '../hooks/usePortfolio.js';
+
+export default function OptimizerApp() {
+  // Data hooks
+  const { geojson, interventionEffects, loading: mapLoading } = useMapData();
+  const {
+    alpha,
+    budget,
+    setAlpha,
+    setBudget,
+    currentPortfolio,
+    portfolioStats,
+    currentParetoFront,
+    interventionMarkers,
+    loading: portfolioLoading,
+  } = usePortfolio(geojson);
+
+  // UI State
+  const [activeTab, setActiveTab] = useState('Heat Map');
+  const [activeLayer, setActiveLayer] = useState('tvs');
+  const [is3D, setIs3D] = useState(false);
+  const [selectedBlock, setSelectedBlock] = useState(null);
+  const [hoveredBlockId, setHoveredBlockId] = useState(null);
+  const [isOptimised, setIsOptimised] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
+  const [showDataSources, setShowDataSources] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [lstToggled, setLstToggled] = useState(false);
+
+  // Layer toggle handler — shows toast on first LST toggle
+  const handleLayerChange = useCallback((layer) => {
+    setActiveLayer(layer);
+    if (layer === 'lst' && !lstToggled) {
+      setLstToggled(true);
+      setToastMessage('Temperature alone is the wrong metric. See how vulnerability shifts.');
+      setShowToast(true);
+    }
+  }, [lstToggled]);
+
+  // Block click handler
+  const handleBlockClick = useCallback((properties) => {
+    setSelectedBlock(properties);
+  }, []);
+
+  // Block hover handler
+  const handleBlockHover = useCallback((properties) => {
+    setHoveredBlockId(properties?.block_id || null);
+  }, []);
+
+  // Optimise handler
+  const handleOptimise = useCallback(() => {
+    setIsOptimised(true);
+    setShowPortfolio(true);
+    setToastMessage(`Portfolio optimised: ₹${budget.toFixed(1)}Cr budget, α=${alpha.toFixed(1)}`);
+    setShowToast(true);
+  }, [budget, alpha]);
+
+  // Tab change — scroll back to top if needed
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    if (tab === 'Analytics') {
+      setShowComparison(false);
+    }
+  }, []);
+
+  // Alpha select from Pareto chart
+  const handleAlphaSelect = useCallback((newAlpha) => {
+    setAlpha(newAlpha);
+    setIsOptimised(true);
+    setShowPortfolio(true);
+    setActiveTab('Heat Map');
+  }, [setAlpha]);
+
+  // Export PDF handler (basic)
+  const handleExport = useCallback(async () => {
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const doc = new jsPDF();
+      doc.setFontSize(20);
+      doc.text('ThermalJustice — Portfolio Report', 20, 30);
+      doc.setFontSize(12);
+      doc.text(`Budget: ₹${budget.toFixed(1)} Cr`, 20, 50);
+      doc.text(`Equity Weight (α): ${alpha.toFixed(1)}`, 20, 60);
+      doc.text(`Avg ΔT: ${portfolioStats?.avgDeltaT?.toFixed(1) || 'N/A'}°C`, 20, 70);
+      doc.text(`People Protected: ${portfolioStats?.peopleProtected?.toLocaleString() || 'N/A'}`, 20, 80);
+      doc.text(`Total Cost: ₹${portfolioStats?.totalCost?.toFixed(1) || 'N/A'} Cr`, 20, 90);
+      doc.text(`Interventions: ${currentPortfolio?.interventions?.length || 0}`, 20, 100);
+      doc.save('thermaljustice-report.pdf');
+      setToastMessage('PDF report exported successfully');
+      setShowToast(true);
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  }, [budget, alpha, portfolioStats, currentPortfolio]);
+
+  // Loading screen
+  if (mapLoading || portfolioLoading) {
+    return (
+      <div className="loading-screen">
+        <h1
+          className="text-3xl font-bold text-white"
+          style={{ fontFamily: 'var(--font-display)' }}
+        >
+          ThermalJustice
+        </h1>
+        <div className="loading-progress-bar">
+          <div
+            className="loading-progress-fill"
+            style={{ width: '60%' }}
+          />
+        </div>
+        <p className="text-sm text-[#94A3B8]">Loading Pune's thermal story...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div id="optimizer-app" className="relative h-screen w-full overflow-hidden bg-[#0B1929]">
+      {/* Nav Bar */}
+      <NavBar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onInfoClick={() => setShowDataSources(true)}
+        onExportClick={handleExport}
+        onModelCardsClick={() => setShowDataSources(true)}
+      />
+
+      {/* Main Content Area */}
+      <div className="absolute inset-0 top-14">
+        {activeTab === 'Heat Map' && (
+          <>
+            {/* Map Canvas */}
+            <MapView
+              geojson={geojson}
+              activeLayer={activeLayer}
+              is3D={is3D}
+              onBlockClick={handleBlockClick}
+              onBlockHover={handleBlockHover}
+              hoveredBlockId={hoveredBlockId}
+              selectedBlockId={selectedBlock?.block_id}
+            >
+              {/* Intervention Markers */}
+              {isOptimised && (
+                <InterventionMarkers
+                  markers={interventionMarkers}
+                  geojson={geojson}
+                />
+              )}
+            </MapView>
+
+            {/* Layer Toggle */}
+            <LayerToggle
+              activeLayer={activeLayer}
+              is3D={is3D}
+              onLayerChange={handleLayerChange}
+              onToggle3D={() => setIs3D(!is3D)}
+            />
+
+            {/* Legend */}
+            <Legend activeLayer={activeLayer} />
+
+            {/* Block Detail Panel */}
+            <BlockDetail
+              block={selectedBlock}
+              interventionEffects={interventionEffects}
+              onClose={() => setSelectedBlock(null)}
+              portfolioOpen={showPortfolio}
+            />
+
+            {/* Portfolio Panel */}
+            <PortfolioPanel
+              portfolio={currentPortfolio}
+              portfolioStats={portfolioStats}
+              budget={budget}
+              visible={showPortfolio}
+            />
+
+            {/* Before/After Button */}
+            {isOptimised && (
+              <button
+                onClick={() => setShowComparison(true)}
+                className="absolute bottom-28 left-1/2 -translate-x-1/2 z-30 glass-card px-6 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-all"
+              >
+                🔄 Before / After Comparison
+              </button>
+            )}
+          </>
+        )}
+
+        {activeTab === 'Analytics' && (
+          <div className="h-full overflow-y-auto p-8" style={{ backgroundColor: '#0B1929' }}>
+            <div className="max-w-4xl mx-auto">
+              <ParetoChart
+                paretoData={currentParetoFront}
+                currentAlpha={alpha}
+                onAlphaSelect={handleAlphaSelect}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'About' && (
+          <div className="h-full overflow-y-auto p-8" style={{ backgroundColor: '#0B1929' }}>
+            <div className="max-w-3xl mx-auto">
+              <h2
+                className="text-4xl font-bold text-white mb-6"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                About ThermalJustice
+              </h2>
+              <div className="space-y-6 text-[#94A3B8] leading-relaxed">
+                <p>
+                  ThermalJustice is an urban heat intervention intelligence platform for Indian cities.
+                  It answers the critical question: <em className="text-white">"Given my budget and my city's
+                  urban heat data, where do I plant trees, install cool pavements, build green roofs,
+                  and create pocket parks to save the most vulnerable lives equitably?"</em>
+                </p>
+                <div className="glass-card p-6">
+                  <h3 className="text-lg font-semibold text-white mb-3">Technical Stack</h3>
+                  <ul className="space-y-2 text-sm">
+                    <li>• <span className="text-white font-medium">Graph Neural Network (GNN)</span> — Thermal Vulnerability Score prediction</li>
+                    <li>• <span className="text-white font-medium">SHAP Analysis</span> — Explainable AI for risk driver identification</li>
+                    <li>• <span className="text-white font-medium">Pareto-Optimal Optimization</span> — Multi-objective knapsack with equity weighting</li>
+                    <li>• <span className="text-white font-medium">Satellite Remote Sensing</span> — Landsat 8/9 LST + Sentinel-2 NDVI</li>
+                  </ul>
+                </div>
+                <p>
+                  Built for the Pune Municipal Corporation and urban planners across India.
+                  Designed to make equity-weighted climate adaptation decisions transparent,
+                  data-driven, and actionable.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Control Bar — always visible on Heat Map tab */}
+        {activeTab === 'Heat Map' && (
+          <ControlBar
+            budget={budget}
+            alpha={alpha}
+            onBudgetChange={setBudget}
+            onAlphaChange={setAlpha}
+            onOptimise={handleOptimise}
+            portfolioStats={portfolioStats}
+            isOptimised={isOptimised}
+          />
+        )}
+      </div>
+
+      {/* Toast */}
+      <Toast
+        message={toastMessage}
+        visible={showToast}
+        onDismiss={() => setShowToast(false)}
+      />
+
+      {/* Comparison View */}
+      {showComparison && (
+        <ComparisonView onClose={() => setShowComparison(false)} />
+      )}
+
+      {/* Data Sources Modal */}
+      {showDataSources && (
+        <DataSourcesModal onClose={() => setShowDataSources(false)} />
+      )}
+    </div>
+  );
+}

@@ -3,19 +3,19 @@ import gsap from 'gsap';
 
 // Alphabetically sorted sub-areas
 const pmcAreas = [
-  "Ambegaon", "Aundh", "Baner", "Bawdhan", "Bhavani Peth", "Bibwewadi", 
-  "Deccan", "Dhankawadi", "Dhanori", "Dhayari", "Erandwane", "Hadapsar", 
-  "Kalyani Nagar", "Kasba Peth", "Katraj", "Kharadi", "Koregaon Park", 
-  "Kothrud", "Lohegaon", "Magarpatta", "Mundhwa", "Nana Peth", "Nanded City", 
-  "Narhe", "Pashan", "Phursungi", "Raviwar Peth", "Sadashiv Peth", 
-  "Sahakar Nagar", "Shaniwar Peth", "Shivajinagar", "Uruli Devachi", 
+  "Ambegaon", "Aundh", "Baner", "Bawdhan", "Bhavani Peth", "Bibwewadi",
+  "Deccan", "Dhankawadi", "Dhanori", "Dhayari", "Erandwane", "Hadapsar",
+  "Kalyani Nagar", "Kasba Peth", "Katraj", "Kharadi", "Koregaon Park",
+  "Kothrud", "Lohegaon", "Magarpatta", "Mundhwa", "Nana Peth", "Nanded City",
+  "Narhe", "Pashan", "Phursungi", "Raviwar Peth", "Sadashiv Peth",
+  "Sahakar Nagar", "Shaniwar Peth", "Shivajinagar", "Uruli Devachi",
   "Viman Nagar", "Vishrantwadi", "Wagholi", "Warje", "Yerawada"
 ];
 
 const pcmcAreas = [
-  "Akurdi", "Bhosari", "Charholi", "Chikhali", "Chinchwad", "Hinjawadi", 
-  "Kiwale", "Moshi", "Nigdi", "Pimple Gurav", "Pimple Nilakh", 
-  "Pimple Saudagar", "Pimpri", "Punawale", "Ravet", "Sangvi", 
+  "Akurdi", "Bhosari", "Charholi", "Chikhali", "Chinchwad", "Hinjawadi",
+  "Kiwale", "Moshi", "Nigdi", "Pimple Gurav", "Pimple Nilakh",
+  "Pimple Saudagar", "Pimpri", "Punawale", "Ravet", "Sangvi",
   "Tathawade", "Thergaon", "Wakad", "Yamunanagar"
 ];
 
@@ -32,7 +32,7 @@ export default function ControlBar({
   location = 'all',
   budget,
   alpha,
-  onLocationChange = () => {},
+  onLocationChange = () => { },
   onBudgetChange,
   onAlphaChange,
   onOptimise,
@@ -41,11 +41,11 @@ export default function ControlBar({
 }) {
   const barRef = useRef(null);
   const locationDropdownRef = useRef(null);
-  
+
   // Local states
   const [localBudget, setLocalBudget] = useState(budget);
   const [showEquityInfo, setShowEquityInfo] = useState(false);
-  
+
   // Location Search States
   const [isLocationOpen, setIsLocationOpen] = useState(false);
   const [locationSearchQuery, setLocationSearchQuery] = useState('');
@@ -113,9 +113,9 @@ export default function ControlBar({
   // Filter locations based on search query
   const filteredLocations = useMemo(() => {
     if (locationSearchQuery === getLocationLabel(location)) {
-      return allLocationOptions; 
+      return allLocationOptions;
     }
-    return allLocationOptions.filter(opt => 
+    return allLocationOptions.filter(opt =>
       opt.label.toLowerCase().includes(locationSearchQuery.toLowerCase())
     );
   }, [locationSearchQuery, location]);
@@ -127,12 +127,39 @@ export default function ControlBar({
   const equityDesc = alpha <= 0.2
     ? 'Max Efficiency'
     : alpha <= 0.4
-    ? 'Balanced Distribution'
-    : alpha <= 0.6
-    ? 'Prioritizing Equity'
-    : alpha <= 0.8
-    ? 'Strong Equity'
-    : 'Maximum Equity';
+      ? 'Balanced Distribution'
+      : alpha <= 0.6
+        ? 'Prioritizing Equity'
+        : alpha <= 0.8
+          ? 'Strong Equity'
+          : 'Maximum Equity';
+
+  const handleOptimiseClick = async () => {
+    try {
+      const payload = {
+        location: location,
+        budget: localBudget !== '' ? parseFloat(localBudget) : 0,
+      };
+
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch('http://127.0.0.1:8000/api/history/save', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+      }
+    } catch (err) {
+      console.error("Failed to save query to DB:", err);
+    }
+
+    if (onOptimise) {
+      onOptimise();
+    }
+  };
 
   return (
     <>
@@ -170,6 +197,8 @@ export default function ControlBar({
           width: 100%;
           background: transparent;
           outline: none;
+          margin-bottom:10px;
+          padding-top: 5px;
         }
         .equity-slider::-webkit-slider-runnable-track {
           width: 100%;
@@ -219,8 +248,8 @@ export default function ControlBar({
         }}
       >
         {/* Main Flex Row - items-end aligns the bottom of the inputs/button together */}
-        <div className="flex flex-row items-end gap-5 w-full">
-          
+        <div className="flex flex-row items-center gap-5 w-full">
+
           {/* 1. Location Search Combobox */}
           <div className="flex-[1.2] min-w-[220px] relative z-[120]" ref={locationDropdownRef}>
             <label className="block text-[10px] text-[#94A3B8] uppercase tracking-wider font-semibold mb-1.5 pl-1">
@@ -241,8 +270,8 @@ export default function ControlBar({
                 placeholder="Search area..."
                 className="w-full h-full bg-black/20 border border-white/10 rounded-xl py-2 pl-4 pr-10 text-sm font-semibold text-white focus:outline-none focus:border-[#0D9488] focus:bg-black/40 transition-all placeholder:text-white/30"
               />
-              
-              <div 
+
+              <div
                 className="absolute right-3 text-[#94A3B8] cursor-pointer"
                 onClick={() => setIsLocationOpen(!isLocationOpen)}
               >
@@ -259,7 +288,7 @@ export default function ControlBar({
                   ) : (
                     filteredLocations.map((opt, index) => {
                       const showHeader = index === 0 || filteredLocations[index - 1].group !== opt.group;
-                      
+
                       return (
                         <React.Fragment key={opt.id}>
                           {showHeader && opt.group !== 'none' && (
@@ -269,9 +298,8 @@ export default function ControlBar({
                           )}
                           <div
                             onClick={() => handleLocationSelect(opt)}
-                            className={`px-4 py-2.5 text-sm text-white cursor-pointer transition-colors ${
-                              opt.id === location ? 'bg-[#0D9488]/20 text-[#2DD4BF] font-bold' : 'hover:bg-white/10'
-                            }`}
+                            className={`px-4 py-2.5 text-sm text-white cursor-pointer transition-colors ${opt.id === location ? 'bg-[#0D9488]/20 text-[#2DD4BF] font-bold' : 'hover:bg-white/10'
+                              }`}
                           >
                             {opt.label}
                           </div>
@@ -326,11 +354,11 @@ export default function ControlBar({
           <div className="flex-[1.5] min-w-[200px] relative z-10">
             <div className="flex items-center justify-between mb-1 pl-1">
               <div className="flex items-center gap-1.5">
-                <label className="text-[10px] text-[#94A3B8] uppercase tracking-wider font-semibold">
+                <label className="text-[10px] text-[#94A3B8] tracking-wider font-semibold">
                   Equity Weight (α)
                 </label>
-                
-                <div 
+
+                <div
                   className="relative flex items-center"
                   onMouseEnter={() => setShowEquityInfo(true)}
                   onMouseLeave={() => setShowEquityInfo(false)}
@@ -341,7 +369,7 @@ export default function ControlBar({
                   >
                     i
                   </button>
-                  
+
                   {showEquityInfo && (
                     <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-64 p-3 rounded-xl bg-[#0F172A] border border-white/10 shadow-2xl z-50 text-left">
                       <h4 className="text-white font-semibold text-xs mb-1.5">What is Equity Weight?</h4>
@@ -353,7 +381,7 @@ export default function ControlBar({
                         <li><strong className="text-white font-mono">1.0:</strong> Prioritizes the most vulnerable and poorest communities first.</li>
                       </ul>
                       <div className="absolute top-full left-1/2 -translate-x-1/2 border-[6px] border-transparent border-t-white/10">
-                         <div className="absolute -top-[7px] -left-[5px] border-[5px] border-transparent border-t-[#0F172A]" />
+                        <div className="absolute -top-[7px] -left-[5px] border-[5px] border-transparent border-t-[#0F172A]" />
                       </div>
                     </div>
                   )}
@@ -363,7 +391,7 @@ export default function ControlBar({
                 {equityDesc}
               </span>
             </div>
-            
+
             <div className="relative h-[48px] flex flex-col justify-center bg-black/10 border border-transparent rounded-xl px-3">
               <input
                 type="range"
@@ -372,7 +400,7 @@ export default function ControlBar({
                 step="0.1"
                 value={alpha}
                 onChange={(e) => onAlphaChange(parseFloat(e.target.value))}
-                className="equity-slider"
+                className="equity-slider mb-1"
               />
               <div className="flex justify-between mt-1.5 text-[9px] text-[#94A3B8] font-medium tracking-wide">
                 <span>MAX COOLING</span>
@@ -384,7 +412,7 @@ export default function ControlBar({
 
           {/* 4. OPTIMISE Button */}
           <button
-            onClick={onOptimise}
+            onClick={handleOptimiseClick}
             className="shrink-0 group overflow-hidden relative z-10"
             style={{
               padding: '0 32px',
@@ -406,7 +434,7 @@ export default function ControlBar({
             <span className="absolute top-0 w-1/2 h-full -left-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-all duration-500 ease-in-out group-hover:left-[150%]" />
             {isOptimised ? '♻️ RE-OPTIMISE' : '⚡ OPTIMISE'}
           </button>
-          
+
         </div>
       </div>
     </>

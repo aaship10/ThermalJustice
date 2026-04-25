@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { InfoIcon, DownloadIcon, LayersIcon } from 'lucide-react';
 
 export default function NavBar({
@@ -9,6 +9,9 @@ export default function NavBar({
   onExportClick,
   onModelCardsClick,
 }) {
+  const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem('token');
+
   return (
     <nav className="liquid-glass-nav" style={{
       position: 'fixed',
@@ -79,7 +82,53 @@ export default function NavBar({
       )}
 
       {/* RIGHT: Icon buttons */}
-      <div style={{ display: 'flex', gap: '8px' }}>
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {isLoggedIn ? (
+          <button 
+            onClick={() => {
+              localStorage.removeItem('token');
+              navigate('/');
+            }}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '100px',
+              background: 'rgba(215, 48, 39, 0.2)',
+              border: '1px solid rgba(215, 48, 39, 0.5)',
+              color: '#F472B6',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              marginRight: '8px'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(215, 48, 39, 0.4)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(215, 48, 39, 0.2)'; e.currentTarget.style.color = '#F472B6'; }}
+          >
+            Sign Out
+          </button>
+        ) : (
+          <Link 
+            to="/login"
+            style={{
+              padding: '6px 16px',
+              borderRadius: '100px',
+              background: 'rgba(13, 148, 136, 0.2)',
+              border: '1px solid rgba(13, 148, 136, 0.5)',
+              color: '#2DD4BF',
+              fontSize: '12px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              transition: 'all 0.2s ease',
+              marginRight: '8px'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(13, 148, 136, 0.4)'; e.currentTarget.style.color = 'white'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(13, 148, 136, 0.2)'; e.currentTarget.style.color = '#2DD4BF'; }}
+          >
+            Sign In
+          </Link>
+        )}
         <button onClick={onInfoClick} style={iconButtonStyle} title="Information">
           <InfoIcon size={16} />
         </button>

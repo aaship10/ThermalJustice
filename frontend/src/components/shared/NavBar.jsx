@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { InfoIcon, DownloadIcon, LayersIcon } from 'lucide-react';
 
 export default function NavBar({
@@ -31,7 +32,13 @@ export default function NavBar({
         }}>
           🌡️
         </div>
-        <span style={{ fontSize: '16px', fontWeight: 700, color: 'white' }}>ThermalJustice</span>
+        <Link
+          to="/"
+          aria-label="Go to the ThermalJustice landing page"
+          style={{ fontSize: '16px', fontWeight: 700, color: 'white', textDecoration: 'none' }}
+        >
+          ThermalJustice
+        </Link>
         <span style={{
           fontSize: '11px', color: 'rgba(255,255,255,0.4)',
           letterSpacing: '0.12em', textTransform: 'uppercase',

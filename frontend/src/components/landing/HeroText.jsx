@@ -49,7 +49,8 @@ export default function HeroText() {
       {/* Wordmark (Top Left) */}
       <div
         ref={wordmarkRef}
-        className="liquid-glass-nav absolute top-24 left-8 px-5 py-2 rounded-full flex flex-col"
+        className="liquid-glass-nav absolute top-24 left-8 inline-flex w-fit flex-col gap-1 rounded-[999px]"
+        style={{ padding: '16px 24px' }}
       >
         <span className="font-semibold text-white text-[18px] font-display">ThermalJustice</span>
         <span className="text-[12px] text-white/50 tracking-[0.15em] uppercase font-display">Heat Intervention Intelligence</span>
@@ -83,7 +84,10 @@ export default function HeroText() {
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-8 flex flex-col items-center gap-2">
-          <div className="liquid-glass px-4 py-2 rounded-full flex items-center justify-center">
+          <div
+            className="liquid-glass inline-flex w-fit items-center justify-center rounded-[999px]"
+            style={{ padding: '14px 22px' }}
+          >
             <span className="text-[11px] uppercase tracking-[0.1em] text-white/50">
               scroll to witness the difference
             </span>

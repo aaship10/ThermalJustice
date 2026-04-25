@@ -101,7 +101,7 @@ export default function ScrollCards() {
         <div
           key={card.id}
           id={card.id}
-          className="scroll-card liquid-glass pointer-events-auto"
+          className="scroll-card liquid-glass pointer-events-none"
           style={{
             ...card.position,
             position: 'absolute',

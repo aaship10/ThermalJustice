@@ -16,76 +16,84 @@ def load_geojson(filename):
     return gpd.GeoDataFrame(rows, crs="EPSG:4326")
 
 def run_spatial_join():
-    print("📖 Loading files for final alignment...")
+    print("🚀 Starting Geographically Intelligent Sync for PMC & PCMC...")
     df = pd.read_csv('data/pune_dashboard_final.csv')
     pmc = load_geojson('data/pune-admin-wards.geojson')
     pcmc = load_geojson('data/pcmc-electoral-wards.geojson')
     
-    # --- MASTER MAPPING DICTIONARY ---
-    # We map the 15 large Admin Zones to your specific dropdown neighborhoods
-    # 🌟 Spelling updated: Bawdhan -> Bavdhan
-    zone_to_neighborhoods = {
-        'Aundh': ['Aundh', 'Baner', 'Pashan'],
-        'Kothrud Karveroad': ['Kothrud', 'Bavdhan', 'Erandwane'],
-        'Warje Karvenagar': ['Warje', 'Dhayari'],
-        'Dhankawadi': ['Dhankawadi', 'Katraj', 'Ambegaon', 'Narhe', 'Nanded City'],
-        'Hadapsar': ['Hadapsar', 'Phursungi', 'Uruli Devachi', 'Magarpatta', 'Mundhwa'],
-        'Nagar Road': ['Viman Nagar', 'Kharadi', 'Wagholi', 'Dhanori', 'Kalyani Nagar'],
-        'Yerawda - Sangamwadi': ['Yerawada', 'Koregaon Park', 'Vishrantwadi', 'Lohegaon'],
-        'KasbaVishrambaugwada': ['Kasba Peth', 'Shaniwar Peth', 'Sadashiv Peth', 'Deccan', 'Nana Peth', 'Shivajinagar'],
-        'Bibwewadi': ['Bibwewadi'],
-        'Kondhwa Wanavdi': ['Kondhwa Wanavdi'],
-        'Tilak Road': ['Tilak Road'],
-        'Sahakarnagar': ['Sahakarnagar'],
-        'Bhavani Peth': ['Bhavani Peth'],
-        'Dhole Patil Rd': ['Dhole Patil Rd'],
-        'Ghole Road': ['Ghole Road']
-    }
-
-    # PCMC Mappings
-    pcmc_wards = ['Pimpri', 'Chinchwad', 'Akurdi', 'Nigdi', 'Bhosari', 'Hinjawadi', 'Wakad', 'Sangvi', 
-                  'Ravet', 'Tathawade', 'Moshi', 'Charholi', 'Chikhali', 'Kiwale', 'Pimple Gurav', 
-                  'Pimple Nilakh', 'Pimple Saudagar', 'Punawale', 'Thergaon', 'Yamunanagar']
-
-    print("📍 Running Spatial Join...")
+    # 1. Standardize Admin/Zone Names
     pmc['corporation'] = 'PMC'
+    pmc['parent_zone'] = pmc['name'].str.replace(r'Admin Ward \d+ ', '', regex=True)
+    
     pcmc['corporation'] = 'PCMC'
+    # PCMC GeoJSON has a 'zone' property (A, B, C, D, E, F)
+    pcmc['parent_zone'] = 'Zone ' + pcmc['zone']
+
     reference_map = pd.concat([pmc, pcmc], ignore_index=True)
 
+    # 2. Spatial Join
+    print("📍 Mapping blocks to PMC/PCMC boundaries...")
     geometry = [Point(xy) for xy in zip(df['longitude'], df['latitude'])]
     gdf_blocks = gpd.GeoDataFrame(df, geometry=geometry, crs="EPSG:4326")
     joined = gpd.sjoin(gdf_blocks, reference_map, how='left', predicate='within')
 
-    print("🎨 Finalizing neighborhood labels...")
-    def assign_neighborhood(row):
-        admin_name = str(row['name'])
-        # Clean PMC prefix
-        clean_admin = admin_name.replace('Admin Ward 0', '').replace('Admin Ward ', '')
-        clean_admin = ''.join([i for i in clean_admin if not i.isdigit()]).strip()
+    # 3. MASTER GEOGRAPHIC PARTITIONING DICTIONARY
+    # We sort neighborhoods from West to East (Longitude) for every zone
+    master_mapping = {
+        # --- PMC ZONES ---
+        'Aundh': ['Pashan', 'Baner', 'Aundh'],
+        'Kothrud Karveroad': ['Bavdhan', 'Kothrud', 'Erandwane'],
+        'Warje Karvenagar': ['Dhayari', 'Warje'],
+        'Dhankawadi': ['Nanded City', 'Narhe', 'Ambegaon', 'Dhankawadi', 'Katraj'],
+        'Hadapsar': ['Mundhwa', 'Magarpatta', 'Hadapsar', 'Phursungi', 'Uruli Devachi'],
+        'Nagar Road': ['Kalyani Nagar', 'Viman Nagar', 'Dhanori', 'Kharadi', 'Wagholi'],
+        'Yerawda - Sangamwadi': ['Yerawada', 'Koregaon Park', 'Vishrantwadi', 'Lohegaon'],
+        'KasbaVishrambaugwada': ['Deccan', 'Shivajinagar', 'Shaniwar Peth', 'Kasba Peth', 'Nana Peth'],
 
-        if row['corporation_right'] == 'PMC' and clean_admin in zone_to_neighborhoods:
-            # Randomly pick one of the neighborhoods that falls in this zone
-            return np.random.choice(zone_to_neighborhoods[clean_admin])
-        elif row['corporation_right'] == 'PCMC':
-            # Spread PCMC points across your PCMC dropdown list
-            return np.random.choice(pcmc_wards)
-        return "Other"
+        # --- PCMC ZONES ---
+        'Zone D': ['Hinjawadi', 'Punawale', 'Tathawade', 'Wakad', 'Ravet'], # West PCMC
+        'Zone F': ['Nigdi', 'Akurdi', 'Yamunanagar'], # North-West
+        'Zone A': ['Chinchwad', 'Pimpri'], # Central
+        'Zone B': ['Kiwale', 'Chikhali'], # North
+        'Zone E': ['Bhosari', 'Moshi', 'Charholi'], # East PCMC
+        'Zone C': ['Thergaon', 'Pimple Nilakh', 'Pimple Saudagar', 'Pimple Gurav', 'Sangvi'] # South-East
+    }
 
-    joined['ward_name'] = joined.apply(assign_neighborhood, axis=1)
-    joined['corporation'] = joined['corporation_right'].fillna('Other')
+    def partition_geographically(group):
+        zone = group.name
+        if zone in master_mapping:
+            sub_neighborhoods = master_mapping[zone]
+            # 🌟 Sort all blocks in this zone by Longitude (West to East)
+            group = group.sort_values(by='longitude')
+            
+            indices = group.index.tolist()
+            chunks = np.array_split(indices, len(sub_neighborhoods))
+            
+            for i, name in enumerate(sub_neighborhoods):
+                group.loc[chunks[i], 'ward_name'] = name
+        else:
+            group['ward_name'] = zone
+        return group
 
-    # Cleanup
-    final_df = joined.drop(columns=['geometry', 'index_right', 'name', 'corporation_right', 'corporation_left', 'zone', 'wardnum'], errors='ignore')
+    print("🎯 Sorting all 54 neighborhoods geographically...")
+    final_gdf = joined.groupby('parent_zone', group_keys=False).apply(partition_geographically)
+
+    # 4. Final Cleanup
+    final_gdf['ward_name'] = final_gdf['ward_name'].fillna('Other')
+    final_gdf['corporation'] = final_gdf['corporation_right'].fillna('Other')
     
-    # Final data polish: Ensure strategies exist
-    strategies = ['Cool Roofs', 'Green Roofs', 'Urban Forest', 'Permeable Rd']
-    mask = final_df['best_strategy'].isna() | (final_df['best_strategy'] == '')
-    final_df.loc[mask, 'best_strategy'] = np.random.choice(strategies, size=mask.sum())
-    final_df.loc[mask, 'max_risk_reduction'] = np.random.uniform(0.5, 2.5, size=mask.sum())
+    final_df = final_gdf.drop(columns=[
+        'geometry', 'index_right', 'name', 'parent_zone', 
+        'corporation_right', 'corporation_left', 'zone', 'wardnum'
+    ], errors='ignore')
 
+    # 5. Save the final synchronized CSV
     final_df.to_csv('data/pune_dashboard_final.csv', index=False)
-    print("✅ SPATIAL SYNC COMPLETE! Spelling updated for Bavdhan.")
-    print(final_df['ward_name'].value_counts().head(10))
+    print("✅ MASTER SYNC COMPLETE! Both PMC and PCMC are now geographically intelligent.")
+    
+    # Display results to verify
+    print("\nSample PCMC Accuracy:")
+    print(final_df[final_df['ward_name'].isin(['Hinjawadi', 'Bhosari'])].groupby('ward_name')['longitude'].mean())
 
 if __name__ == "__main__":
     run_spatial_join()

@@ -203,9 +203,12 @@ export default function OptimizerApp() {
   }, [budget, alpha, portfolioStats, currentPortfolio]);
 
   // Compute filtered GeoJSON based on active selection and "Optimise" toggle
-  const displayedGeojson = React.useMemo(() => {
+    const displayedGeojson = React.useMemo(() => {
     if (!geojson) return null;
-    if (!isOptimised) return null; // Don't show the blocks on first load
+    
+    // ✅ If NOT optimised, show the whole city map!
+    // This ensures the map isn't empty when the page first loads.
+    if (!isOptimised) return geojson;
 
     const LOCATION_PREFIXES = {
       'pmc-kothrud': 'KTR',
@@ -231,23 +234,23 @@ export default function OptimizerApp() {
   }, [geojson, isOptimised, targetLocation]);
 
   // Loading screen
-  if (mapLoading || portfolioLoading) {
-    return (
-      <div className="loading-screen">
-        <h1
-          className="text-3xl font-bold text-white"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          ThermalJustice
-        </h1>
-        <div className="loading-progress-bar">
-          <div
-            className="loading-progress-fill"
-            style={{ width: '60%' }}
-          />
+    if (mapLoading && !geojson) {
+      return (
+        <div className="loading-screen">
+          <h1
+            className="text-3xl font-bold text-white"
+            style={{ fontFamily: 'var(--font-display)' }}
+          >
+            ThermalJustice
+          </h1>
+          <div className="loading-progress-bar">
+            <div
+              className="loading-progress-fill"
+              style={{ width: '60%' }}
+            />
+          </div>
+          <p className="text-sm text-text-secondary">Loading Pune's thermal story...</p>
         </div>
-        <p className="text-sm text-text-secondary">Loading Pune's thermal story...</p>
-      </div>
     );
   }
 
@@ -269,22 +272,38 @@ export default function OptimizerApp() {
           <>
             {/* Map Canvas */}
             <MapView
-              geojson={displayedGeojson}
-              activeLayer={activeLayer}
-              is3D={is3D}
-              onBlockClick={handleBlockClick}
-              onBlockHover={handleBlockHover}
-              hoveredBlockId={hoveredBlockId}
-              selectedBlockId={selectedBlock?.block_id}
-            >
-              {/* Intervention Markers */}
-              {isOptimised && (
-                <InterventionMarkers
-                  markers={interventionMarkers}
+            //   geojson={displayedGeojson}
+            //   activeLayer={activeLayer}
+            //   is3D={is3D}
+            //   onBlockClick={handleBlockClick}
+            //   onBlockHover={handleBlockHover}
+            //   hoveredBlockId={hoveredBlockId}
+            //   selectedBlockId={selectedBlock?.block_id}
+            // >
+            //   {/* Intervention Markers */}
+            //   {isOptimised && (
+            //     <InterventionMarkers
+            //       markers={interventionMarkers}
+            //       geojson={displayedGeojson}
+            //     />
+            //   )}
                   geojson={displayedGeojson}
-                />
-              )}
-            </MapView>
+                  activeLayer={activeLayer}
+                  is3D={is3D}
+                  onBlockClick={handleBlockClick}
+                  onBlockHover={handleBlockHover}
+                  hoveredBlockId={hoveredBlockId}
+                  selectedBlockId={selectedBlock?.block_id}
+                  interventionMarkers={interventionMarkers} // 👈 Add this new prop!
+                  isOptimised={isOptimised}               // 👈 Add this to toggle Grid Mode
+            >
+                  {isOptimised && (
+                    <InterventionMarkers
+                      markers={interventionMarkers}
+                      geojson={displayedGeojson}
+                    />
+                  )}
+            </MapView> 
 
             {/* Layer Toggle */}
             <LayerToggle

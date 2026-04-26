@@ -50,7 +50,7 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
 # Enable CORS for the Vite frontend (port 5173 or similar)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -235,7 +235,7 @@ class ThermalGAT(nn.Module):
         return x
 
 # --- STEP 2: APP INITIALIZATION & DATA LOADING ---
-app = FastAPI(title="ThermalJustice Pune API")
+# Title configuration is ignored here since app is already instantiated at the top of the file
 
 # Global Data Objects
 dashboard_df = None

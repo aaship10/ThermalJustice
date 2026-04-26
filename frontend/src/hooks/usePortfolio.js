@@ -1,29 +1,27 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { findNearestPortfolioKey, computePortfolioStats, getBlockCentroids } from '../utils/portfolioUtils.js';
 
-/**
- * usePortfolio — Manages portfolio state, loads from /public/data/,
- * handles α × budget lookups with nearest-key snapping.
- */
 export function usePortfolio(geojson) {
-  const [portfoliosData, setPortfoliosData] = useState(null);
+  const [currentPortfolio, setCurrentPortfolio] = useState(null);
   const [paretoData, setParetoData] = useState(null);
+  const [portfolioStats, setPortfolioStats] = useState({
+    totalCost: 0,
+    avgDeltaT: 0,
+    peopleProtected: 0,
+    interventionCounts: {},
+    neighborhoods: [],
+  });
   const [alpha, setAlpha] = useState(0.4);
   const [budget, setBudget] = useState(5.0);
   const [loading, setLoading] = useState(true);
 
-  // Load portfolio data
+  // Load static pareto_fronts data so ParetoChart still works
   useEffect(() => {
     let cancelled = false;
-
     async function load() {
       try {
-        const [portfolioRes, paretoRes] = await Promise.all([
-          fetch('/data/portfolios.json').then(r => r.json()),
-          fetch('/data/pareto_fronts.json').then(r => r.json()),
-        ]);
+        const paretoRes = await fetch('/data/pareto_fronts.json').then(r => r.json());
         if (cancelled) return;
-        setPortfoliosData(portfolioRes);
         setParetoData(paretoRes);
         setLoading(false);
       } catch (err) {
@@ -31,7 +29,6 @@ export function usePortfolio(geojson) {
         setLoading(false);
       }
     }
-
     load();
     return () => { cancelled = true; };
   }, []);
@@ -42,21 +39,44 @@ export function usePortfolio(geojson) {
     return getBlockCentroids(geojson);
   }, [geojson]);
 
-  // Find the current portfolio using nearest-key snapping
-  const currentPortfolioKey = useMemo(() => {
-    if (!portfoliosData) return null;
-    return findNearestPortfolioKey(portfoliosData, alpha, budget);
-  }, [portfoliosData, alpha, budget]);
+  // LIVE BACKEND OPTIMIZATION
+  const fetchPortfolio = async (loc, bud, alp) => {
+    setLoading(true);
+    try {
+      const area = {
+        'pmc-kothrud': 'Kothrud',
+        'pmc-viman-nagar': 'Viman Nagar',
+        'pmc-baner': 'Baner',
+        'pcmc-wakad': 'Wakad',
+        'pcmc-hinjawadi': 'Hinjawadi',
+        'all': 'Other'
+      }[loc] || 'Kothrud';
 
-  const currentPortfolio = useMemo(() => {
-    if (!portfoliosData || !currentPortfolioKey) return null;
-    return portfoliosData[currentPortfolioKey];
-  }, [portfoliosData, currentPortfolioKey]);
+      const res = await fetch('http://127.0.0.1:8000/optimise', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          area: area,
+          budget: bud * 10000000, 
+          alpha: alp
+        })
+      });
+      const data = await res.json();
+      
+      const mappedPortfolio = {
+          interventions: data.selected_interventions || [],
+          summary: data.summary || {}
+      };
+      
+      setCurrentPortfolio(mappedPortfolio);
+      setPortfolioStats(computePortfolioStats(mappedPortfolio));
 
-  // Compute stats
-  const portfolioStats = useMemo(() => {
-    return computePortfolioStats(currentPortfolio);
-  }, [currentPortfolio]);
+    } catch (err) {
+      console.error('Failed to optimise portfolio:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Get Pareto front data for current budget
   const currentParetoFront = useMemo(() => {
@@ -100,11 +120,10 @@ export function usePortfolio(geojson) {
     setAlpha: handleAlphaChange,
     setBudget: handleBudgetChange,
     currentPortfolio,
-    currentPortfolioKey,
     portfolioStats,
     currentParetoFront,
+    fetchPortfolio,
     interventionMarkers,
-    blockCentroids,
-    loading,
+    loading
   };
 }

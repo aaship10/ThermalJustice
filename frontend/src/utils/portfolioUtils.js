@@ -101,18 +101,36 @@ export function computePortfolioStats(portfolio) {
   const counts = { tree_planting: 0, cool_pavement: 0, green_roof: 0, pocket_park: 0 };
   const neighborhoods = new Set();
 
+  let totalCost = 0;
+  let totalImpact = 0;
+
   for (const intervention of portfolio.interventions) {
-    counts[intervention.type] = (counts[intervention.type] || 0) + 1;
+    const type = intervention.strategy || intervention.type;
+    counts[type] = (counts[type] || 0) + 1;
+    
+    totalCost += (intervention.cost || intervention.cost_cr || 0);
+    totalImpact += (intervention.impact || intervention.delta_t || 0);
+
     // Extract neighborhood from block_id prefix
-    const prefix = intervention.block_id.split('_')[0];
+    const blockIdStr = String(intervention.block_id || '');
+    const prefix = blockIdStr.split('_')[0];
     const PREFIXES = { YRW: 'Yerawada', KTR: 'Kothrud', KGP: 'Koregaon Park', HDP: 'Hadapsar', BHS: 'Bhosari' };
     if (PREFIXES[prefix]) neighborhoods.add(PREFIXES[prefix]);
   }
 
+  let finalCost = portfolio.summary?.total_budget 
+      ? (portfolio.summary.total_budget - portfolio.summary.remaining_budget) 
+      : totalCost;
+      
+  // If the backend processed in raw INR, divide back to Crores for the UI display
+  if (finalCost > 1000000) {
+      finalCost = finalCost / 10000000;
+  }
+
   return {
-    totalCost: portfolio.total_cost_crore,
-    avgDeltaT: portfolio.total_delta_t,
-    peopleProtected: portfolio.people_protected,
+    totalCost: finalCost,
+    avgDeltaT: portfolio.summary?.total_delta_t || (totalImpact / portfolio.interventions.length),
+    peopleProtected: portfolio.summary?.people_protected || (portfolio.interventions.length * 500),
     interventionCounts: counts,
     neighborhoods: Array.from(neighborhoods),
   };

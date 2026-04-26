@@ -41,6 +41,7 @@ export default function OptimizerApp() {
     currentParetoFront,
     interventionMarkers,
     loading: portfolioLoading,
+    fetchPortfolio
   } = usePortfolio(geojson);
 
   // UI State
@@ -58,6 +59,7 @@ export default function OptimizerApp() {
   const [lstToggled, setLstToggled] = useState(false);
   const [savedScenarios, setSavedScenarios] = useState([]);
   const [showScenarioComparison, setShowScenarioComparison] = useState(false);
+  const [targetLocation, setTargetLocation] = useState('all');
 
   const locationHook = useLocation();
 
@@ -103,13 +105,26 @@ export default function OptimizerApp() {
     setHoveredBlockId(properties?.block_id || null);
   }, []);
 
-  // Optimise handler
-  const handleOptimise = useCallback(() => {
+  // Optimise handler (Main button click)
+  const handleOptimise = useCallback(async () => {
+    await fetchPortfolio(targetLocation, budget, alpha);
     setIsOptimised(true);
     setShowPortfolio(true);
     setToastMessage(`Portfolio optimised: ₹${budget.toFixed(1)}Cr budget, α=${alpha.toFixed(1)}`);
     setShowToast(true);
-  }, [budget, alpha]);
+  }, [budget, alpha, targetLocation, fetchPortfolio]);
+
+  // Real-time Knapsack updating pipeline:
+  // After the user commits the "Optimise" button once, any further slider changes 
+  // will automatically trigger the Python machine learning backend processing.
+  React.useEffect(() => {
+    if (isOptimised) {
+      const debounce = setTimeout(async () => {
+        await fetchPortfolio(targetLocation, budget, alpha);
+      }, 300);
+      return () => clearTimeout(debounce);
+    }
+  }, [budget, alpha, targetLocation, isOptimised]);
 
   // Tab change — scroll back to top if needed
   const handleTabChange = useCallback((tab) => {
@@ -170,6 +185,34 @@ export default function OptimizerApp() {
     }
   }, [budget, alpha, portfolioStats, currentPortfolio]);
 
+  // Compute filtered GeoJSON based on active selection and "Optimise" toggle
+  const displayedGeojson = React.useMemo(() => {
+    if (!geojson) return null;
+    if (!isOptimised) return null; // Don't show the blocks on first load
+
+    const LOCATION_PREFIXES = {
+      'pmc-kothrud': 'KTR',
+      'pmc-yerawada': 'YRW',
+      'pmc-koregaon-park': 'KGP',
+      'pmc-hadapsar': 'HDP',
+      'pcmc-bhosari': 'BHS'
+    };
+
+    const prefix = LOCATION_PREFIXES[targetLocation];
+    if (prefix) {
+      return {
+        ...geojson,
+        features: geojson.features.filter(f => {
+           const idStr = String(f.properties.block_id || '');
+           return idStr.startsWith(prefix);
+        })
+      };
+    }
+    
+    // If "All" or a region without a specific mock prefix is chosen, just show whatever is in the mock DB.
+    return geojson;
+  }, [geojson, isOptimised, targetLocation]);
+
   // Loading screen
   if (mapLoading || portfolioLoading) {
     return (
@@ -191,6 +234,7 @@ export default function OptimizerApp() {
     );
   }
 
+
   return (
     <div id="optimizer-app" className="relative h-screen w-full overflow-hidden bg-[#0B1929]">
       {/* Nav Bar */}
@@ -208,7 +252,7 @@ export default function OptimizerApp() {
           <>
             {/* Map Canvas */}
             <MapView
-              geojson={geojson}
+              geojson={displayedGeojson}
               activeLayer={activeLayer}
               is3D={is3D}
               onBlockClick={handleBlockClick}
@@ -220,7 +264,7 @@ export default function OptimizerApp() {
               {isOptimised && (
                 <InterventionMarkers
                   markers={interventionMarkers}
-                  geojson={geojson}
+                  geojson={displayedGeojson}
                 />
               )}
             </MapView>
@@ -327,6 +371,8 @@ export default function OptimizerApp() {
         {/* Control Bar — always visible on Heat Map tab */}
         {activeTab === 'Heat Map' && (
           <ControlBar
+            location={targetLocation}
+            onLocationChange={setTargetLocation}
             budget={budget}
             alpha={alpha}
             onBudgetChange={setBudget}

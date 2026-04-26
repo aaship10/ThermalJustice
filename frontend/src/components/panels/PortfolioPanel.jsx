@@ -6,6 +6,11 @@ const INTERVENTION_CONFIG = {
   cool_roofs: { icon: '🏠', label: 'Cool Roofs', color: '#74ADD1' },
   cool_pavements: { icon: '🛣️', label: 'Cool Pavements', color: '#A0AAB2' },
   pocket_parks: { icon: '⛲', label: 'Pocket Parks', color: '#4ADE80' },
+  // Live Backend mappings
+  'Urban Forest': { icon: '🌳', label: 'Urban Forest', color: '#0D9488' },
+  'Cool Roofs': { icon: '🏠', label: 'Cool Roofs', color: '#74ADD1' },
+  'Permeable Rd': { icon: '🛣️', label: 'Permeable Roads', color: '#A0AAB2' },
+  'Green Roofs': { icon: '🌿', label: 'Green Roofs', color: '#4ADE80' },
 };
 
 export default function PortfolioPanel({ portfolio, portfolioStats, budget, visible, onSaveScenario }) {
@@ -27,7 +32,8 @@ export default function PortfolioPanel({ portfolio, portfolioStats, budget, visi
 
   // Aggregate interventions by type
   const counts = portfolio.interventions.reduce((acc, curr) => {
-    acc[curr.intervention_type] = (acc[curr.intervention_type] || 0) + 1;
+    const type = curr.intervention_type || curr.strategy || 'Unknown';
+    acc[type] = (acc[type] || 0) + 1;
     return acc;
   }, {});
 

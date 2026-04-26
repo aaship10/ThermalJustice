@@ -134,7 +134,7 @@ const CityBlock = ({ x, z, width, depth, height, activated, pulsing, stage }) =>
           background: `linear-gradient(
             to bottom,
             #ffffff 0%,
-            #2c70b4ff 100%
+            #f5faff 100%
           )`,
           transform: `rotateY(-90deg) translateZ(${width * UNIT}px) translateX(${depth * UNIT * 0.3}px)`,
           transformOrigin: 'right center',

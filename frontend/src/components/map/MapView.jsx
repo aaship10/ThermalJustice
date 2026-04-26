@@ -128,6 +128,10 @@ export default function MapView({
       onClick={onClick}
       cursor={cursor}
       fadeDuration={0}
+      onLoad={() => {
+        window.__TJ_MAP_READY = true;
+        window.dispatchEvent(new Event('tj:map:ready'));
+      }}
     >
       {geojson && (
         <Source id="pune-blocks" type="geojson" data={geojson}>

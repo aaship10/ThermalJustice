@@ -27,8 +27,13 @@ import ControlBar from '../components/controls/ControlBar.jsx';
 // Hooks
 import { useMapData } from '../hooks/useMapData.js';
 import { usePortfolio } from '../hooks/usePortfolio.js';
+import { useAppLoader } from '../hooks/useAppLoader.js';
+import CityLoader from '../components/loader/CityLoader.jsx';
 
 export default function OptimizerApp() {
+  // App Loader State
+  const { loaderState, startLoading } = useAppLoader();
+
   // Data hooks
   const { geojson, interventionEffects, loading: mapLoading } = useMapData();
   const {
@@ -62,6 +67,14 @@ export default function OptimizerApp() {
   const [targetLocation, setTargetLocation] = useState('all');
 
   const locationHook = useLocation();
+
+  // Start the loader on mount
+  useEffect(() => {
+    startLoading(() => {
+      // Called when loader completes its exit animation
+      console.log('CityLoader complete. Showing app.');
+    });
+  }, [startLoading]);
 
   // Restore history state from URL
   useEffect(() => {
@@ -213,30 +226,19 @@ export default function OptimizerApp() {
     return geojson;
   }, [geojson, isOptimised, targetLocation]);
 
-  // Loading screen
-  if (mapLoading || portfolioLoading) {
-    return (
-      <div className="loading-screen">
-        <h1
-          className="text-3xl font-bold text-white"
-          style={{ fontFamily: 'var(--font-display)' }}
-        >
-          ThermalJustice
-        </h1>
-        <div className="loading-progress-bar">
-          <div
-            className="loading-progress-fill"
-            style={{ width: '60%' }}
-          />
-        </div>
-        <p className="text-sm text-[#94A3B8]">Loading Pune's thermal story...</p>
-      </div>
-    );
-  }
-
-
   return (
-    <div id="optimizer-app" className="relative h-screen w-full overflow-hidden bg-[#0B1929]">
+    <>
+      <CityLoader loaderState={loaderState} />
+      
+      <div 
+        id="optimizer-app" 
+        className="relative h-screen w-full overflow-hidden bg-[#0B1929]"
+        style={{ 
+          visibility: loaderState.done ? 'visible' : 'hidden',
+          opacity: loaderState.done ? 1 : 0,
+          animation: loaderState.done ? 'fadeIn 0.6s ease forwards' : 'none'
+        }}
+      >
       {/* Nav Bar */}
       <NavBar
         activeTab={activeTab}
@@ -397,9 +399,7 @@ export default function OptimizerApp() {
       )}
 
       {/* Data Sources Modal */}
-      {showDataSources && (
-        <DataSourcesModal onClose={() => setShowDataSources(false)} />
-      )}
+      {showDataSources && <DataSourcesModal onClose={() => setShowDataSources(false)} />}
 
       {/* Scenario Comparison View */}
       {showScenarioComparison && (
@@ -415,6 +415,7 @@ export default function OptimizerApp() {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }

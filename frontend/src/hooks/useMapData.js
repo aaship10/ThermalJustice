@@ -14,10 +14,17 @@ export function useMapData() {
 
     async function loadData() {
       try {
-        const [geoRes, effectsRes] = await Promise.all([
-          fetch('/data/pune_blocks.geojson').then(r => r.json()),
-          fetch('/data/intervention_effects.json').then(r => r.json()),
-        ]);
+        let geoRes = window.__TJ_GEOJSON;
+        let effectsRes = window.__TJ_INTERVENTIONS;
+
+        if (!geoRes || !effectsRes) {
+          [geoRes, effectsRes] = await Promise.all([
+            fetch('/data/pune_blocks.geojson').then(r => r.json()),
+            fetch('/data/intervention_effects.json').then(r => r.json()),
+          ]);
+          window.__TJ_GEOJSON = geoRes;
+          window.__TJ_INTERVENTIONS = effectsRes;
+        }
 
         if (cancelled) return;
         setGeojson(geoRes);

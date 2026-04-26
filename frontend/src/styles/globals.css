@@ -341,35 +341,50 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ============================================
-   Loading Screen
+/* ============================================
+   City Loader Animations
    ============================================ */
 
-.loading-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: var(--color-bg-dark);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
+/* Loader spin animation for the 'loading' status icon */
+@keyframes loaderSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
-.loading-progress-bar {
-  width: 300px;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
+.status-icon-loading {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: #0D9488;
+  animation: loaderSpin 0.8s linear infinite;
 }
 
-.loading-progress-fill {
-  height: 100%;
-  background: white;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
-  border-radius: 2px;
-  transition: width 0.3s ease-out;
+/* Checkmark for done state */
+.status-icon-done {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #0D9488;
+  position: relative;
+}
+.status-icon-done::after {
+  content: '';
+  position: absolute;
+  left: 5px; top: 9px;
+  width: 5px; height: 3px;
+  border-left: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(-45deg) translateY(-3px);
+}
+
+/* App fade-in on mount */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.99); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* Loader overlay exit */
+#city-loader-overlay {
+  will-change: opacity, transform;
 }
 
 /* ============================================

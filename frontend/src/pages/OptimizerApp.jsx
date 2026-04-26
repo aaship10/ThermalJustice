@@ -105,14 +105,15 @@ export default function OptimizerApp() {
     setHoveredBlockId(properties?.block_id || null);
   }, []);
 
-  // Optimise handler (Main button click)
-  const handleOptimise = useCallback(async () => {
-    await fetchPortfolio(targetLocation, budget, alpha);
-    setIsOptimised(true);
-    setShowPortfolio(true);
-    setToastMessage(`Portfolio optimised: ₹${budget.toFixed(1)}Cr budget, α=${alpha.toFixed(1)}`);
-    setShowToast(true);
-  }, [budget, alpha, targetLocation, fetchPortfolio]);
+// Helper function to translate names consistently for both the button and the sliders
+  const getBackendLocationName = useCallback((rawLocation) => {
+    if (rawLocation === 'all') return 'All';
+    let cleanName = rawLocation.replace(/^(pmc-|pcmc-)/, '');
+    return cleanName
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }, []);
 
   // Real-time Knapsack updating pipeline:
   // After the user commits the "Optimise" button once, any further slider changes 
@@ -120,11 +121,27 @@ export default function OptimizerApp() {
   React.useEffect(() => {
     if (isOptimised) {
       const debounce = setTimeout(async () => {
-        await fetchPortfolio(targetLocation, budget, alpha);
+        const backendName = getBackendLocationName(targetLocation);
+        console.log(`Slider auto-update for: ${backendName}`);
+        await fetchPortfolio(backendName, budget, alpha);
       }, 300);
       return () => clearTimeout(debounce);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [budget, alpha, targetLocation, isOptimised]);
+
+  // Optimise handler (Main button click)
+  const handleOptimise = useCallback(async () => {
+    const backendLocationName = getBackendLocationName(targetLocation);
+    console.log(`Button clicked for: ${backendLocationName}`);
+
+    await fetchPortfolio(backendLocationName, budget, alpha);
+    
+    setIsOptimised(true);
+    setShowPortfolio(true);
+    setToastMessage(`Portfolio optimised: ₹${budget.toFixed(1)}Cr budget, α=${alpha.toFixed(1)}`);
+    setShowToast(true);
+  }, [budget, alpha, targetLocation, fetchPortfolio, getBackendLocationName]);
 
   // Tab change — scroll back to top if needed
   const handleTabChange = useCallback((tab) => {
@@ -229,14 +246,14 @@ export default function OptimizerApp() {
             style={{ width: '60%' }}
           />
         </div>
-        <p className="text-sm text-[#94A3B8]">Loading Pune's thermal story...</p>
+        <p className="text-sm text-text-secondary">Loading Pune's thermal story...</p>
       </div>
     );
   }
 
 
   return (
-    <div id="optimizer-app" className="relative h-screen w-full overflow-hidden bg-[#0B1929]">
+    <div id="optimizer-app" className="relative h-screen w-full overflow-hidden bg-bg-dark">
       {/* Nav Bar */}
       <NavBar
         activeTab={activeTab}
@@ -342,7 +359,7 @@ export default function OptimizerApp() {
               >
                 About ThermalJustice
               </h2>
-              <div className="space-y-6 text-[#94A3B8] leading-relaxed">
+              <div className="space-y-6 text-text-secondary leading-relaxed">
                 <p>
                   ThermalJustice is an urban heat intervention intelligence platform for Indian cities.
                   It answers the critical question: <em className="text-white">"Given my budget and my city's

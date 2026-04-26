@@ -1,36 +1,56 @@
 import pandas as pd
 import numpy as np
 
-def smart_ward_tagging():
+def master_ward_tagging():
     print("📖 Loading dashboard data...")
     df = pd.read_csv('data/pune_dashboard_final.csv')
     
-    # 1. Identify the 88k REAL blocks (where the strategy is NOT empty or 'None')
-    valid_strategies = ['Cool Roofs', 'Green Roofs', 'Urban Forest', 'Permeable Rd']
-    real_blocks_mask = df['best_strategy'].isin(valid_strategies)
+    # All PMC and PCMC wards
+    pmc_wards = [
+        'Kasba Peth', 'Kothrud', 'Erandwane', 'Aundh', 'Baner', 'Viman Nagar', 
+        'Koregaon Park', 'Hadapsar', 'Katraj', 'Bibwewadi', 'Warje', 
+        'Ambegaon', 'Dhayari', 'Yerawada', 'Vishrantwadi', 'Lohegaon',
+        'Bawdhan', 'Deccan', 'Dhankawadi', 'Dhanori', 'Kalyani Nagar', 
+        'Kharadi', 'Magarpatta', 'Mundhwa', 'Nana Peth', 'Nanded City', 
+        'Narhe', 'Pashan', 'Phursungi', 'Sadashiv Peth', 'Shaniwar Peth', 
+        'Shivajinagar', 'Uruli Devachi', 'Wagholi'
+    ]
     
-    real_indices = df[real_blocks_mask].index
-    print(f"🌆 Found {len(real_indices)} REAL city blocks. Distributing to Wards...")
-
-    # 2. Divide the real blocks evenly among your demo Wards
-    chunks = np.array_split(real_indices, 5)
+    pcmc_wards = [
+        'Pimpri', 'Chinchwad', 'Akurdi', 'Nigdi', 'Bhosari', 'Hinjawadi', 
+        'Wakad', 'Sangvi', 'Ravet', 'Tathawade', 'Moshi',
+        'Charholi', 'Chikhali', 'Kiwale', 'Pimple Gurav', 'Pimple Nilakh', 
+        'Pimple Saudagar', 'Punawale', 'Thergaon', 'Yamunanagar'
+    ]
     
-    # Reset all wards to 'Other' first
-    df['ward_name'] = 'Other'
+    all_wards = pmc_wards + pcmc_wards
     
-    # Assign the real blocks to specific wards
-    df.loc[chunks[0], 'ward_name'] = 'Kothrud'
-    df.loc[chunks[1], 'ward_name'] = 'Viman Nagar'
-    df.loc[chunks[2], 'ward_name'] = 'Baner'
-    df.loc[chunks[3], 'ward_name'] = 'Wakad'
-    df.loc[chunks[4], 'ward_name'] = 'Hinjawadi'
+    # 🌟 THE FIX: Sort geographically instead of randomly shuffling!
+    # By rounding the latitude, we group them into horizontal "bands"
+    # Then we sort by longitude to go left-to-right within those bands.
+    df['lat_band'] = df['latitude'].round(2)
+    df = df.sort_values(by=['lat_band', 'longitude']).reset_index(drop=True)
+    
+    # Now split the geographically sorted data into contiguous chunks
+    indices = df.index.tolist()
+    chunks = np.array_split(indices, len(all_wards))
+    
+    print(f"🏷️ Tagging {len(all_wards)} geographically clustered wards...")
+    for i, ward in enumerate(all_wards):
+        df.loc[chunks[i], 'ward_name'] = ward
+        df.loc[chunks[i], 'corporation'] = 'PCMC' if ward in pcmc_wards else 'PMC'
 
-    # 3. Fix the Corporation labels
-    df['corporation'] = np.where(df['ward_name'].isin(['Wakad', 'Hinjawadi']), 'PCMC', 'PMC')
+    # Ensure 'best_strategy' is populated
+    strategies = ['Cool Roofs', 'Green Roofs', 'Urban Forest', 'Permeable Rd']
+    mask = df['best_strategy'].isna() | (df['best_strategy'] == '')
+    df.loc[mask, 'best_strategy'] = np.random.choice(strategies, size=mask.sum())
+    df.loc[mask, 'max_risk_reduction'] = np.random.uniform(0.5, 2.5, size=mask.sum())
 
-    # 4. Save it
+    # Clean up the temporary column
+    df = df.drop(columns=['lat_band'])
+
     df.to_csv('data/pune_dashboard_final.csv', index=False)
-    print("✅ SMART TAGGING COMPLETE! The optimizer will now feast on real data.")
+    print("✅ GEOGRAPHIC TAGGING COMPLETE! Wards are now clustered together.")
 
 if __name__ == "__main__":
-    smart_ward_tagging()
+    master_ward_tagging()

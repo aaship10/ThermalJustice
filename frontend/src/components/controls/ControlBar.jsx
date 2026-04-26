@@ -3,7 +3,7 @@ import gsap from 'gsap';
 
 // Alphabetically sorted sub-areas
 const pmcAreas = [
-  "Ambegaon", "Aundh", "Baner", "Bawdhan", "Bhavani Peth", "Bibwewadi",
+  "Ambegaon", "Aundh", "Baner", "Bavdhan", "Bhavani Peth", "Bibwewadi",
   "Deccan", "Dhankawadi", "Dhanori", "Dhayari", "Erandwane", "Hadapsar",
   "Kalyani Nagar", "Kasba Peth", "Katraj", "Kharadi", "Koregaon Park",
   "Kothrud", "Lohegaon", "Magarpatta", "Mundhwa", "Nana Peth", "Nanded City",
@@ -236,7 +236,7 @@ export default function ControlBar({
       <div
         ref={barRef}
         id="control-bar"
-        className="fixed bottom-[20px] left-1/2 -translate-x-1/2 z-[100] px-6 py-4 w-[calc(100vw-80px)] max-w-[1200px]"
+        className="fixed bottom-5 left-1/2 -translate-x-1/2 z-100 px-6 py-4 w-[calc(100vw-80px)] max-w-300"
         style={{
           visibility: 'hidden',
           background: 'rgba(8, 16, 30, 0.75)',
@@ -251,11 +251,11 @@ export default function ControlBar({
         <div className="flex flex-row items-center gap-5 w-full">
 
           {/* 1. Location Search Combobox */}
-          <div className="flex-[1.2] min-w-[220px] relative z-[120]" ref={locationDropdownRef}>
-            <label className="block text-[10px] text-[#94A3B8] uppercase tracking-wider font-semibold mb-1.5 pl-1">
+          <div className="flex-[1.2] min-w-55 relative z-120" ref={locationDropdownRef}>
+            <label className="block text-[10px] text-text-secondary uppercase tracking-wider font-semibold mb-1.5 pl-1">
               Target Region
             </label>
-            <div className="relative flex items-center h-[48px]">
+            <div className="relative flex items-center h-12">
               <input
                 type="text"
                 value={locationSearchQuery}

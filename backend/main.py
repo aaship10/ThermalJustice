@@ -347,8 +347,8 @@ async def optimise(request: OptimiseRequest):
                 "labor_cost": pricing["labor"],
                 "impact": float(block['max_risk_reduction']),
                 "live_lst": float(block['LST_Celsius'] + temp_shift),
-                "latitude": float(block['latitude']),      # 📍 Included for Mapbox
-                "longitude": float(block['longitude'])     # 📍 Included for Mapbox
+                "latitude": float(block['latitude']),      
+                "longitude": float(block['longitude'])     
             })
             remaining_budget -= total_block_cost
             
